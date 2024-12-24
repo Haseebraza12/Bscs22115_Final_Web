@@ -9,19 +9,47 @@ function Login({ setIsAuthenticated }) {
     password: ''
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
+    setLoading(true);
+
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', credentials);
-      localStorage.setItem('token', response.data.token);
-      setIsAuthenticated(true);
-      navigate('/tasks');
+      console.log('Attempting login with:', credentials.username);
+      
+      const response = await axios.post(
+        'http://localhost:5000/api/auth/login',
+        credentials,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('Login response:', response.data);
+
+      if (response.data.token) {
+        // Store token and user info
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Set auth header for future requests
+        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        
+        setIsAuthenticated(true);
+        navigate('/tasks');
+      } else {
+        setError('Invalid response from server');
+      }
     } catch (error) {
-      setError(error.response?.data?.message || 'Invalid credentials');
+      console.error('Login error:', error.response || error);
+      setError(error.response?.data?.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -44,7 +72,13 @@ function Login({ setIsAuthenticated }) {
           onChange={(e) => setCredentials({...credentials, password: e.target.value})}
           required
         />
-        <button className="auth-button" type="submit">Sign In</button>
+        <button 
+          className="auth-button" 
+          type="submit" 
+          disabled={loading}
+        >
+          {loading ? 'Signing in...' : 'Sign In'}
+        </button>
       </form>
       <p className="auth-link">
         Don't have an account? <Link to="/signup">Sign Up</Link>
