@@ -13,6 +13,7 @@ router.get('/', async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(tasks);
   } catch (error) {
+    console.error('Fetch tasks error:', error);
     res.status(500).json({ message: 'Error fetching tasks' });
   }
 });
@@ -22,6 +23,13 @@ router.post('/', async (req, res) => {
   try {
     const { name, description, dueDate } = req.body;
 
+    // Validate required fields
+    if (!name || !description || !dueDate) {
+      return res.status(400).json({ 
+        message: 'Please provide name, description, and due date' 
+      });
+    }
+
     const task = new Task({
       name,
       description,
@@ -29,9 +37,10 @@ router.post('/', async (req, res) => {
       userId: req.user.userId
     });
 
-    const savedTask = await task.save();
-    res.status(201).json(savedTask);
+    await task.save();
+    res.status(201).json(task);
   } catch (error) {
+    console.error('Create task error:', error);
     res.status(500).json({ message: 'Error creating task' });
   }
 });
@@ -39,9 +48,10 @@ router.post('/', async (req, res) => {
 // Update task
 router.put('/:id', async (req, res) => {
   try {
+    const { name, description, dueDate, status } = req.body;
     const task = await Task.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.userId },
-      req.body,
+      { name, description, dueDate, status },
       { new: true }
     );
 
@@ -51,6 +61,7 @@ router.put('/:id', async (req, res) => {
 
     res.json(task);
   } catch (error) {
+    console.error('Update task error:', error);
     res.status(500).json({ message: 'Error updating task' });
   }
 });
@@ -69,6 +80,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ message: 'Task deleted successfully' });
   } catch (error) {
+    console.error('Delete task error:', error);
     res.status(500).json({ message: 'Error deleting task' });
   }
 });

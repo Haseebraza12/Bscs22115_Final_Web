@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/axios'; // Use the configured axios instance
 import './components.css';
 
 function TaskList() {
@@ -10,6 +10,7 @@ function TaskList() {
     dueDate: ''
   });
   const [editingTask, setEditingTask] = useState(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchTasks();
@@ -17,35 +18,76 @@ function TaskList() {
 
   const fetchTasks = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/tasks');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please login to view tasks');
+        return;
+      }
+
+      const response = await api.get('/tasks', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       setTasks(response.data);
+      setError('');
     } catch (error) {
       console.error('Error fetching tasks:', error);
+      setError(error.response?.data?.message || 'Error fetching tasks');
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please login to add tasks');
+        return;
+      }
+
       if (editingTask) {
-        await axios.put(`http://localhost:5000/api/tasks/${editingTask._id}`, newTask);
+        await api.put(`/tasks/${editingTask._id}`, newTask, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         setEditingTask(null);
       } else {
-        await axios.post('http://localhost:5000/api/tasks', newTask);
+        await api.post('/tasks', newTask, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
       }
+      
       setNewTask({ name: '', description: '', dueDate: '' });
       fetchTasks();
     } catch (error) {
       console.error('Error saving task:', error);
+      setError(error.response?.data?.message || 'Error saving task');
     }
   };
 
   const handleDelete = async (taskId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/tasks/${taskId}`);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please login to delete tasks');
+        return;
+      }
+
+      await api.delete(`/tasks/${taskId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       fetchTasks();
     } catch (error) {
       console.error('Error deleting task:', error);
+      setError(error.response?.data?.message || 'Error deleting task');
     }
   };
 
@@ -63,6 +105,7 @@ function TaskList() {
       <div className="task-container">
         <div className="task-header">
           <h2>Task List</h2>
+          {error && <div className="error-message">{error}</div>}
         </div>
         
         <form className="task-form" onSubmit={handleSubmit}>
