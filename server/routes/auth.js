@@ -4,18 +4,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Si
+// Signup route
 router.post('/signup', async (req, res) => {
   try {
-    console.log('📝 Signup request received:', req.body);
-    
     const { username, email, password } = req.body;
-
-    // Validate input
-    if (!username || !email || !password) {
-      console.log('❌ Missing required fields');
-      return res.status(400).json({ message: 'All fields are required' });
-    }
 
     // Check if user exists
     const existingUser = await User.findOne({ 
@@ -23,12 +15,13 @@ router.post('/signup', async (req, res) => {
     });
     
     if (existingUser) {
-      console.log('❌ User already exists:', email);
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create new user
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create new user
     const user = new User({
       username,
       email,
@@ -36,7 +29,6 @@ router.post('/signup', async (req, res) => {
     });
 
     await user.save();
-    console.log('✅ User created successfully:', user._id);
 
     res.status(201).json({ 
       message: 'User created successfully',
@@ -47,7 +39,7 @@ router.post('/signup', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Signup error:', error);
+    console.error('Signup error:', error);
     res.status(500).json({ message: 'Error creating user' });
   }
 });
@@ -55,33 +47,38 @@ router.post('/signup', async (req, res) => {
 // Login route
 router.post('/login', async (req, res) => {
   try {
-    console.log('🔑 Login attempt for:', req.body.username);
-    
     const { username, password } = req.body;
+    console.log('Login attempt for:', username); // Debug log
 
-    // Find user
+    // Validate input
+    if (!username || !password) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Find user by username
     const user = await User.findOne({ username });
+    console.log('User found:', user ? 'Yes' : 'No'); // Debug log
+
     if (!user) {
-      console.log('❌ User not found:', username);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Check password
+    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log('Password match:', isMatch ? 'Yes' : 'No'); // Debug log
+
     if (!isMatch) {
-      console.log('❌ Invalid password for:', username);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Create token
+    // Create JWT token
     const token = jwt.sign(
       { userId: user._id, username: user.username },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRY }
+      { expiresIn: '24h' }
     );
 
-    console.log('✅ Login successful:', username);
-
+    // Send successful response
     res.json({
       token,
       user: {
@@ -90,9 +87,10 @@ router.post('/login', async (req, res) => {
         email: user.email
       }
     });
+
   } catch (error) {
-    console.error('❌ Login error:', error);
-    res.status(500).json({ message: 'Error logging in' });
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Error during login process' });
   }
 });
 

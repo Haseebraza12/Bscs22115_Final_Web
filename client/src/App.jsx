@@ -44,7 +44,7 @@ function App() {
                   <Login setIsAuthenticated={setIsAuthenticated} />
                 )
               } 
-            />
+            /> 
             <Route
               path="/tasks"
               element={

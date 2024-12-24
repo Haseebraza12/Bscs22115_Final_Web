@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/axios'; // Import the configured axios instance
 import './components.css';
 
 function Signup() {
@@ -19,7 +19,6 @@ function Signup() {
     setError('');
     setLoading(true);
 
-    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
@@ -27,30 +26,16 @@ function Signup() {
     }
 
     try {
-      // Log the request data
-      console.log('Sending registration request:', {
+      await api.post('/auth/signup', {
         username: formData.username,
-        email: formData.email
+        email: formData.email,
+        password: formData.password
       });
-
-      const response = await axios.post(
-        'http://localhost:5000/api/auth/signup',
-        {
-          username: formData.username,
-          email: formData.email,
-          password: formData.password
-        }
-      );
-
-      console.log('Registration successful:', response.data);
+      
       alert('Registration successful! Please login.');
       navigate('/login');
     } catch (error) {
-      console.error('Registration error:', error.response || error);
-      setError(
-        error.response?.data?.message || 
-        'Registration failed. Please try again.'
-      );
+      setError(error.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -67,7 +52,6 @@ function Signup() {
           value={formData.username}
           onChange={(e) => setFormData({...formData, username: e.target.value})}
           required
-          minLength="3"
         />
         <input
           type="email"
@@ -82,7 +66,6 @@ function Signup() {
           value={formData.password}
           onChange={(e) => setFormData({...formData, password: e.target.value})}
           required
-          minLength="6"
         />
         <input
           type="password"
@@ -90,7 +73,6 @@ function Signup() {
           value={formData.confirmPassword}
           onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
           required
-          minLength="6"
         />
         <button 
           className="auth-button" 
