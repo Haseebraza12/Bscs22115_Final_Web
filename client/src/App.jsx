@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState } from 'react';
 import Login from './components/Login';
+import Signup from './components/Signup';
 import TaskList from './components/TaskList';
 import PrivateRoute from './components/PrivateRoute';
 import Navbar from './components/Navbar';
@@ -25,6 +26,16 @@ function App() {
         <main className="main-content">
           <Routes>
             <Route 
+              path="/signup" 
+              element={
+                isAuthenticated ? (
+                  <Navigate to="/tasks" />
+                ) : (
+                  <Signup />
+                )
+              } 
+            />
+            <Route 
               path="/login" 
               element={
                 isAuthenticated ? (
@@ -42,7 +53,10 @@ function App() {
                 </PrivateRoute>
               }
             />
-            <Route path="/" element={<Navigate to="/tasks" />} />
+            {/* Redirect root to signup page */}
+            <Route path="/" element={<Navigate to="/signup" />} />
+            {/* Catch all route for non-existent paths */}
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
       </div>
