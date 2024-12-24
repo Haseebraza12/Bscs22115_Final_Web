@@ -11,26 +11,48 @@ function Signup() {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
+    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
+      setLoading(false);
       return;
     }
 
     try {
-      await axios.post('http://localhost:5000/api/auth/signup', {
+      // Log the request data
+      console.log('Sending registration request:', {
         username: formData.username,
-        email: formData.email,
-        password: formData.password
+        email: formData.email
       });
+
+      const response = await axios.post(
+        'http://localhost:5000/api/auth/signup',
+        {
+          username: formData.username,
+          email: formData.email,
+          password: formData.password
+        }
+      );
+
+      console.log('Registration successful:', response.data);
+      alert('Registration successful! Please login.');
       navigate('/login');
     } catch (error) {
-      setError(error.response?.data?.message || 'Error during registration');
+      console.error('Registration error:', error.response || error);
+      setError(
+        error.response?.data?.message || 
+        'Registration failed. Please try again.'
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -45,6 +67,7 @@ function Signup() {
           value={formData.username}
           onChange={(e) => setFormData({...formData, username: e.target.value})}
           required
+          minLength="3"
         />
         <input
           type="email"
@@ -59,6 +82,7 @@ function Signup() {
           value={formData.password}
           onChange={(e) => setFormData({...formData, password: e.target.value})}
           required
+          minLength="6"
         />
         <input
           type="password"
@@ -66,8 +90,15 @@ function Signup() {
           value={formData.confirmPassword}
           onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
           required
+          minLength="6"
         />
-        <button className="auth-button" type="submit">Sign Up</button>
+        <button 
+          className="auth-button" 
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? 'Signing up...' : 'Sign Up'}
+        </button>
       </form>
       <p className="auth-link">
         Already have an account? <Link to="/login">Sign In</Link>
