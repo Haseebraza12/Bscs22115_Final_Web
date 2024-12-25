@@ -1,52 +1,80 @@
-router.post('/login', async (req, res) => {
-    try {
-      const { username, password } = req.body;
-      console.log('Login attempt for username:', username);
-  
-      // Input validation
-      if (!username || !password) {
-        console.log('Missing credentials');
-        return res.status(400).json({ message: 'Username and password are required' });
-      }
-  
-      // Find user
-      const user = await User.findOne({ username });
-      console.log('User found:', !!user);
-  
-      if (!user) {
-        console.log('User not found');
-        return res.status(401).json({ message: 'Invalid credentials' });
-      }
-  
-      // Compare password
-      const isMatch = await bcrypt.compare(password, user.password);
-      console.log('Password match:', isMatch);
-  
-      if (!isMatch) {
-        console.log('Password mismatch');
-        return res.status(401).json({ message: 'Invalid credentials' });
-      }
-  
-      // Create token
-      const token = jwt.sign(
-        { userId: user._id, username: user.username },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRY || '24h' }
-      );
-  
-      console.log('Login successful for user:', username);
-      
-      res.json({
-        token,
-        user: {
-          userId: user._id,
-          username: user.username,
-          email: user.email
-        }
-      });
-  
-    } catch (error) {
-      console.error('Login error:', error);
-      res.status(500).json({ message: 'Server error during login' });
-    }
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import api from '../utils/axios';
+import './components.css';
+
+function Login({ setIsAuthenticated }) {
+  const [formData, setFormData] = useState({
+    username: '',
+    password: ''
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await api.post('/auth/login', {
+        username: formData.username,
+        password: formData.password
+      });
+      
+      localStorage.setItem('token', response.data.token);
+      setIsAuthenticated(true);
+      navigate('/tasks');
+    } catch (error) {
+      setError(error.response?.data?.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+  };
+
+  return (
+    <div className="auth-container">
+      <h2>Sign In</h2>
+      {error && <div className="error-message">{error}</div>}
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <input
+          type="text"
+          name="username"
+          placeholder="Username"
+          value={formData.username}
+          onChange={handleChange}
+          required
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+        />
+        <button 
+          className="auth-button" 
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? 'Signing in...' : 'Sign In'}
+        </button>
+      </form>
+      <p className="auth-link">
+        Don't have an account? <Link to="/signup">Sign Up</Link>
+      </p>
+    </div>
+  );
+}
+
+export default Login;

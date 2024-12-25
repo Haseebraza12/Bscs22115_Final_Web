@@ -3,10 +3,8 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const Task = require('../models/Task');
 
-// Apply auth middleware to all routes
 router.use(auth);
 
-// Get all tasks
 router.get('/', async (req, res) => {
   try {
     const tasks = await Task.find({ userId: req.user.userId })
@@ -18,12 +16,9 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Create task
 router.post('/', async (req, res) => {
   try {
     const { name, description, dueDate } = req.body;
-
-    // Validate required fields
     if (!name || !description || !dueDate) {
       return res.status(400).json({ 
         message: 'Please provide name, description, and due date' 
@@ -44,8 +39,6 @@ router.post('/', async (req, res) => {
     res.status(500).json({ message: 'Error creating task' });
   }
 });
-
-// Update task
 router.put('/:id', async (req, res) => {
   try {
     const { name, description, dueDate, status } = req.body;
@@ -66,7 +59,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete task
 router.delete('/:id', async (req, res) => {
   try {
     const task = await Task.findOneAndDelete({
